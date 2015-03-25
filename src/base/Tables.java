@@ -109,15 +109,11 @@ public class Tables {
     /**
      * 
      * @return ResultSet of the tables in the database
+     * @throws java.sql.SQLException
      */
-    public ResultSet getTables() {
+    public ResultSet getTables() throws SQLException {
         ResultSet rs;
-        try {
-            rs = this.metaData.getTables(null, null, null, null);
-        } catch(Exception e) {
-            this.exp = e;
-            return null;
-        }
+        rs = this.metaData.getTables(null, null, null, null);
         return rs;
     }
     
@@ -165,16 +161,15 @@ public class Tables {
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("id INT PRIMARY KEY");
             fields.add("sometext TEXT");
-            //if(!tb.createTable("sometable", fields)){
-            //    System.err.println(tb.getExcpetion());
-            //}
+            if(!tb.createTable("sometable", fields)){
+                System.err.println(tb.getExcpetion());
+            }
             System.out.println("Table exists: " + tb.TableExists("sometable"));
             ResultSet rs = tb.getTableSchema("sometable");
             while (rs.next()) {
-                System.out.println(rs.getString(1));
+                System.out.println(rs.getString(2));
             }
             rs.close();
-            
         } catch (Exception e){
             System.err.println(e.getMessage());
         }

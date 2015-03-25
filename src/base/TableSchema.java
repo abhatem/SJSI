@@ -24,25 +24,76 @@ import java.util.ArrayList;
  * @author abo0ody
  */
 public class TableSchema {
-    ColumnSpecs columnSpecs = new ColumnSpecs();
+    ArrayList<ColumnSpecs> columnSpecs;
     /**
      * Gets the table schema from the table_info PRAGMA result set
      * @param SchemaResultSet The result set produced from the query "PRAGMA table_info('TableName')"
      * @throws SQLException
      */
-    public TableSchema(ResultSet SchemaResultSet) throws SQLException{
-        while(SchemaResultSet.next()) {
-            this.columnSpecs.columnIndex = SchemaResultSet.getInt(1);
-            this.columnSpecs.columnName = SchemaResultSet.getString(2);
-            this.columnSpecs.columnType = SchemaResultSet.getString(3);
-            this.columnSpecs.canBeNull = SchemaResultSet.getBoolean(4);
-            this.columnSpecs.defaultValue = SchemaResultSet.getString(5);
-            this.columnSpecs.primaryKey = SchemaResultSet.getBoolean(6);
-        }
+    public TableSchema(ResultSet SchemaResultSet) throws SQLException
+    {
+        createFromResultSet(SchemaResultSet);
     }
     
-    public TableSchema(LiteConnection liteConn, String TableName) 
+    /**
+     * 
+     * @param liteConn Database connection
+     * @param TableName Name of the table for the schema
+     * @throws SQLException 
+     */
+    public TableSchema(LiteConnection liteConn, String TableName) throws SQLException
+    {
+        String sql = "PRAGMA table_info(" + TableName + ")";
+        Statement stmt = liteConn.getConnection().createStatement();
+        ResultSet rs = stmt.executeQuery(sql);
+        this.createFromResultSet(rs);
+        rs.close();
+        stmt.close();
+    }
+    
+    /**
+     * Dummy constructor
+     */
+    public TableSchema()
     {
         
+    }
+    
+    /**
+     * 
+     * @return Returns number of columns - 1. Perfect for loops
+     */
+    public int getColumnSize() {
+        return columnSpecs.size();
+    }
+    
+    /**
+     * 
+     * @param Index Index of the column
+     * @return Returns column specification based on index
+     */
+    public ColumnSpecs getColumn(int Index)
+    {
+        return columnSpecs.get(Index);
+    }
+    
+    /**
+     * 
+     * @param rs
+     * @throws SQLException 
+     */
+    private void createFromResultSet(ResultSet rs) throws SQLException
+    {
+        ColumnSpecs columnSpec;
+        while(rs.next()) {
+            columnSpec = new ColumnSpecs();
+            columnSpec.columnIndex = rs.getInt(1);
+            columnSpec.columnName = rs.getString(2);
+            columnSpec.columnType = rs.getString(3);
+            columnSpec.canBeNull = rs.getBoolean(4);
+            columnSpec.defaultValue = rs.getString(5);
+            columnSpec.primaryKey = rs.getBoolean(6);
+            this.columnSpecs.add(columnSpec);
+        }
     }
 }

@@ -40,6 +40,7 @@ public class LiteConnection {
         Class.forName("org.sqlite.JDBC");
         this.conn = DriverManager.getConnection("jdbc:sqlite:" + DatabaseName);
         this.DatabaseName = DatabaseName;
+        this.metaData = this.conn.getMetaData();
         return this.conn;
     }
     
