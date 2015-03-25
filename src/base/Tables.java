@@ -1,16 +1,24 @@
-package base;
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/* 
+ * Copyright (C) 2015 abo0ody
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package base;
 
 import java.sql.*;
 import java.util.ArrayList;
 
-// for test purposes
-import base.LiteConnection;
 
 /**
  * Handles Table operations
@@ -18,8 +26,8 @@ import base.LiteConnection;
  */
 public class Tables {
     private final Connection conn;
-    private final DatabaseMetaData MetaData;
-    private final String DatabaseName;
+    private final DatabaseMetaData metaData;
+    private final String databaseName;
     private Statement stmt;
     private Exception exp;
     
@@ -28,12 +36,11 @@ public class Tables {
      * @param conn Database connection
      * @throws SQLException
      */
-    public Tables(Connection conn) throws SQLException
+    public Tables(LiteConnection liteConn) throws SQLException
     {
-        this.conn = conn;
-        MetaData = conn.getMetaData();
-        int LastColonIndex = MetaData.getURL().lastIndexOf(':');
-        DatabaseName = MetaData.getURL().substring(LastColonIndex + 1);
+        this.conn = liteConn.getConnection();
+        metaData = liteConn.getMetaData();
+        databaseName = liteConn.getDatabaseName();
     }
     
     /**
@@ -96,7 +103,7 @@ public class Tables {
      * @return The name of the current Database 
      */
     public String getDatabaseName() {
-        return this.DatabaseName;
+        return this.databaseName;
     }
     
     /**
@@ -106,7 +113,7 @@ public class Tables {
     public ResultSet getTables() {
         ResultSet rs;
         try {
-            rs = this.MetaData.getTables(null, null, null, null);
+            rs = this.metaData.getTables(null, null, null, null);
         } catch(Exception e) {
             this.exp = e;
             return null;
@@ -150,10 +157,11 @@ public class Tables {
     
     public static void main(String[] args) {
         LiteConnection conn = new LiteConnection();
-        conn.Connect("test.db");
+        
         try {
-            Tables tb = new Tables(conn.getConnection());
-            System.out.println(tb.DatabaseName);
+            conn.Connect("test.db");
+            Tables tb = new Tables(conn);
+            System.out.println(tb.databaseName);
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("id INT PRIMARY KEY");
             fields.add("sometext TEXT");
