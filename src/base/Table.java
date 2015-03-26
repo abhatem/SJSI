@@ -24,9 +24,41 @@ import java.sql.SQLException;
  */
 public class Table extends TableOperations {
     
-    public Table(LiteConnection liteConn) throws SQLException
+    TableSchema tableSchema = null;
+    String tableName = null;
+    /**
+     * Constructs a table object.
+     * @param liteConn
+     * @throws SQLException 
+     */
+    public Table(LiteConnection liteConn, String TableName) throws SQLException
     {
-        super();
+        //Note: liteConn is not supposed to be stored in this class because all the
+        // operations will be handled by the parent class (TableOperations)
+        super(liteConn);
+        this.tableName = TableName;
+        this.tableSchema = new TableSchema(liteConn, this.tableName);
     }
     
+    /**
+     * Creates Table object and writes it into database
+     * @param liteConn Database connection
+     * @param TableName Name of the table
+     * @param ts Table schema
+     * @throws SQLException 
+     */
+    public Table(LiteConnection liteConn, String TableName, TableSchema ts) throws SQLException
+    {
+        super(liteConn);
+        this.tableName = TableName;
+        this.tableSchema = ts;
+        // write table
+    }
+    
+    /**
+     * Dummy constructor
+     */
+    public Table() {
+        super();
+    }
 }

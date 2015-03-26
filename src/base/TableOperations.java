@@ -57,13 +57,13 @@ public class TableOperations {
     
     /**
      * Creates a table with a specified name and specified fields.
-     * @param name
+     * @param TableName
      * @param fields
      * @throws java.sql.SQLException
      */
-    public void createTable(String name, ArrayList<String> fields) throws SQLException
+    public void createTable(String TableName, ArrayList<String> fields) throws SQLException
     {
-        String sql = "CREATE TABLE " + name + "(";
+        String sql = "CREATE TABLE " + TableName + "(";
         for(int i = 0; i < fields.size(); i++) {
             sql += fields.get(i);
             if(i != fields.size() -1) {
@@ -75,6 +75,11 @@ public class TableOperations {
         stmt.execute(sql);
         stmt.close();
             
+    }
+    
+    public void createTable(String TableName, TableSchema schema) throws SQLException
+    {
+        createTable(TableName, schema.toStringList());
     }
     
     /**
@@ -161,14 +166,29 @@ public class TableOperations {
             System.out.println(tb.databaseName);
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("id INT PRIMARY KEY");
-            fields.add("sometext TEXT");
+            fields.add("sometext TEXT NOT NULL");
+            fields.add("num INT AUTO INCREMENT");
+            tb.deleteTable("sometable");
             tb.createTable("sometable", fields);
-            System.out.println("Table exists: " + tb.TableExists("sometable"));
-            ResultSet rs = tb.getTableSchema("sometable");
-            while (rs.next()) {
-                System.out.println(rs.getString(2));
+            try (ResultSet rs = tb.getTableSchema("sometable")) {
+                while(rs.next()) {
+                    System.out.println(rs.getString(4));
+                }
             }
-            rs.close();
+            
+            TableSchema schema = new TableSchema(tb.getTableSchema("sometable"));
+            tb.deleteTable("sometable2");
+            tb.createTable("sometable2", schema);
+            System.out.println("---------------------------------------------");
+            try (ResultSet rs = tb.getTableSchema("sometable2")) {
+                while(rs.next()) {
+                    System.out.println(rs.getString(2));
+                }
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
+            
+            System.out.println("Table exists: " + tb.TableExists("sometable2"));
         } catch (SQLException | ClassNotFoundException e){
             System.err.println(e.getMessage());
         }

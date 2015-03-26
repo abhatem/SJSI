@@ -25,7 +25,7 @@ public class ColumnSpecs {
     public Integer columnIndex;
     public String columnName;
     public String columnType;
-    public Boolean canBeNull;
+    public Boolean cantBeNull;
     public String defaultValue;
     public Boolean primaryKey;
 }

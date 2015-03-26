@@ -34,6 +34,7 @@ public class TableSchema {
      */
     public TableSchema(ResultSet SchemaResultSet) throws SQLException
     {
+        this.columnSpecs = new ArrayList<>();
         createFromResultSet(SchemaResultSet);
     }
     
@@ -45,6 +46,7 @@ public class TableSchema {
      */
     public TableSchema(LiteConnection liteConn, String TableName) throws SQLException
     {
+        this.columnSpecs = new ArrayList<>();
         String sql = "PRAGMA table_info(" + TableName + ")";
         Statement stmt = liteConn.getConnection().createStatement();
         ResultSet rs = stmt.executeQuery(sql);
@@ -54,10 +56,20 @@ public class TableSchema {
     }
     
     /**
+     * Creates a TableSchema Object from specified ColumnSpecs
+     * @param cs 
+     */
+    public TableSchema(ArrayList<ColumnSpecs> cs)
+    {
+        this.columnSpecs = new ArrayList<>(cs);
+    }
+    
+    /**
      * Dummy constructor
      */
     public TableSchema()
     {
+        this.columnSpecs = new ArrayList<>();
         
     }
     
@@ -80,6 +92,45 @@ public class TableSchema {
     }
     
     /**
+     * Returns an ArrayList of strings, with every element being a string extracted
+     * out of a column specification. Example:
+     * toStringList.get(0) would contain something like "Id INT PRIMARY KEY"
+     * @return An ArrayList of strings, with every element being a column specification 
+     */
+    public ArrayList<String> toStringList() 
+    {
+        int i = 0;
+        String str;
+        ColumnSpecs cs;
+        ArrayList<String> als = new ArrayList<>();
+        while(i < columnSpecs.size()) {
+            str = new String();
+            cs = columnSpecs.get(i);
+            
+            // first add the name
+            str += cs.columnName + " ";
+            
+            // then add the type
+            str += cs.columnType + " ";
+            
+            // then add the default value
+            if(!cs.defaultValue.equals("null"))
+                str += "DEFAULT" + cs.defaultValue + " ";
+            
+            //then see if the value can be null
+            if(cs.cantBeNull)
+                str += "NOT NULL ";
+            
+            if(cs.primaryKey)
+                str += "PRIMARY KEY";
+            
+            als.add(str);
+            i++;
+        }
+        return als;
+    }
+    
+    /**
      * 
      * @param rs
      * @throws SQLException 
@@ -92,9 +143,11 @@ public class TableSchema {
             columnSpec.columnIndex = rs.getInt(1);
             columnSpec.columnName = rs.getString(2);
             columnSpec.columnType = rs.getString(3);
-            columnSpec.canBeNull = rs.getBoolean(4);
+            columnSpec.cantBeNull = rs.getBoolean(4);
             columnSpec.defaultValue = rs.getString(5);
+            if(columnSpec.defaultValue == null) columnSpec.defaultValue = "null";
             columnSpec.primaryKey = rs.getBoolean(6);
+            if(columnSpec.primaryKey == null) columnSpec.primaryKey = false;
             this.columnSpecs.add(columnSpec);
         }
     }
