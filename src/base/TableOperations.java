@@ -16,7 +16,11 @@
  */
 package base;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 
@@ -24,19 +28,19 @@ import java.util.ArrayList;
  * Handles Table operations
  * @author abo0ody
  */
-public class Tables {
-    private final Connection conn;
-    private final DatabaseMetaData metaData;
-    private final String databaseName;
-    private Statement stmt;
-    private Exception exp;
+public class TableOperations {
+    private Connection conn = null;
+    private DatabaseMetaData metaData = null;
+    private String databaseName = null;
+    private Statement stmt = null;
+    private Exception exp = null;
     
     /**
      * Constructor
-     * @param conn Database connection
+     * @param liteConn
      * @throws SQLException
      */
-    public Tables(LiteConnection liteConn) throws SQLException
+    public TableOperations(LiteConnection liteConn) throws SQLException
     {
         this.conn = liteConn.getConnection();
         metaData = liteConn.getMetaData();
@@ -44,12 +48,20 @@ public class Tables {
     }
     
     /**
+     * Dummy constructor
+     */
+    public TableOperations() 
+    {
+        
+    }
+    
+    /**
      * Creates a table with a specified name and specified fields.
      * @param name
      * @param fields
-     * @return true if successful, false if not. see #getException
+     * @throws java.sql.SQLException
      */
-    public Boolean createTable(String name, ArrayList<String> fields)
+    public void createTable(String name, ArrayList<String> fields) throws SQLException
     {
         String sql = "CREATE TABLE " + name + "(";
         for(int i = 0; i < fields.size(); i++) {
@@ -59,34 +71,23 @@ public class Tables {
             }
         }
         sql += ")";
-        try {
-            stmt = this.conn.createStatement();
-            stmt.execute(sql);
-            stmt.close();
-        } catch(Exception e) {
-            this.exp = e;
-            return false;
-        }
-        return true;
+        stmt = this.conn.createStatement();
+        stmt.execute(sql);
+        stmt.close();
+            
     }
     
     /**
      * Deletes a table with the specified name if it exists.
      * @param name
-     * @return true if successful, false if not. see #getException
+     * @throws java.sql.SQLException
      */
-    public Boolean deleteTable(String name)
+    public void deleteTable(String name) throws SQLException
     {
         String sql = "DROP TABLE IF EXISTS " + name;
-        try {
-            stmt = this.conn.createStatement();
-            stmt.execute(sql);
-            stmt.close();
-        } catch (Exception e) {
-            this.exp = e;
-            return false;
-        }
-        return true;
+        stmt = this.conn.createStatement();
+        stmt.execute(sql);
+        stmt.close();
     }
     
     /**
@@ -156,21 +157,19 @@ public class Tables {
         
         try {
             conn.Connect("test.db");
-            Tables tb = new Tables(conn);
+            TableOperations tb = new TableOperations(conn);
             System.out.println(tb.databaseName);
             ArrayList<String> fields = new ArrayList<String>();
             fields.add("id INT PRIMARY KEY");
             fields.add("sometext TEXT");
-            if(!tb.createTable("sometable", fields)){
-                System.err.println(tb.getExcpetion());
-            }
+            tb.createTable("sometable", fields);
             System.out.println("Table exists: " + tb.TableExists("sometable"));
             ResultSet rs = tb.getTableSchema("sometable");
             while (rs.next()) {
                 System.out.println(rs.getString(2));
             }
             rs.close();
-        } catch (Exception e){
+        } catch (SQLException | ClassNotFoundException e){
             System.err.println(e.getMessage());
         }
         
