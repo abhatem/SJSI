@@ -26,7 +26,7 @@ import java.util.ArrayList;
  * @author abo0ody
  */
 public class TableSchema {
-    ArrayList<ColumnSpecs> columnSpecs;
+    private ArrayList<ColumnSpecs> columnSpecs;
     /**
      * Gets the table schema from the table_info PRAGMA result set
      * @param SchemaResultSet The result set produced from the query "PRAGMA table_info('TableName')"

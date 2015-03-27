@@ -3,7 +3,7 @@
     <type>org.netbeans.modules.java.j2seproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/j2se-project/3">
-            <name>AJSI</name>
+            <name>SJSI</name>
             <source-roots>
                 <root id="src.dir"/>
             </source-roots>
@@ -12,6 +12,8 @@
             </test-roots>
         </data>
         <spellchecker-wordlist xmlns="http://www.netbeans.org/ns/spellchecker-wordlist/1">
+            <word>occurence</word>
+            <word>occurences</word>
             <word>Sqlite</word>
         </spellchecker-wordlist>
     </configuration>

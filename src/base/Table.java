@@ -16,18 +16,22 @@
  */
 package base;
 
+import base.utils.ReadException;
+import base.utils.ValuesException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import static base.utils.StringUtils.breakString;
 
 /**
  * Class responsible for handling tables
  * @author abo0ody
  */
 public class Table extends TableOperations {
-    
     TableSchema tableSchema = null;
     String tableName = null;
+    ArrayList<ArrayList<String>> rowData = null;
     /**
-     * Constructs a table object.
+     * Constructs a table object and reads it's contents from the database if it exists
      * @param liteConn
      * @throws SQLException 
      */
@@ -52,7 +56,7 @@ public class Table extends TableOperations {
         super(liteConn);
         this.tableName = TableName;
         this.tableSchema = ts;
-        // write table
+        super.writeTable(TableName, ts);
     }
     
     /**
@@ -60,5 +64,100 @@ public class Table extends TableOperations {
      */
     public Table() {
         super();
+    }
+    
+    /**
+     * Writes the table to the database.
+     * @throws SQLException 
+     */
+    public void writeTable() throws SQLException 
+    {
+        super.writeTable(this.tableName, this.tableSchema);
+    }
+    
+    /**
+     * Inserts a new row to the table
+     * @param Values String specifying the values to be stored separated by ';' example "1; user; pass;"
+     * @throws SQLException
+     * @throws ValuesException 
+     */
+    public void insertRow(String Values) throws SQLException, ValuesException
+    {
+        ArrayList<String> vals = breakString(Values, ";");
+        
+        super.insertRow(this, vals);
+    }
+    
+    
+    /**
+     * Inserts a new row to the table
+     * @param Values ArrayList<String> specifying the values to be stored example: [0] = 1, [1] = user, [2] = pass
+     * @throws SQLException
+     * @throws ValuesException 
+     */
+    public void insertRow(ArrayList<String> Values) throws SQLException, ValuesException
+    {
+        super.insertRow(this, Values);
+    }
+    
+    /**
+     * Sets the data for the rows stored in the table object.
+     * @param rowData 
+     */
+    public void setRowData(ArrayList<ArrayList<String>> rowData) 
+    {
+        this.rowData = new ArrayList<>(rowData);
+    }
+    
+    /**
+     * Gets the row data stored in the table object.
+     * @return the data of the rows stored in the table object
+     */
+    public ArrayList<ArrayList<String>> getRowData()
+    {
+        return this.rowData;
+    }
+    
+    /**
+     * 
+     * @return The name of the table
+     */
+    public String getTableName() {
+        return this.tableName;
+    }
+    
+    /**
+     * Sets the name of the table
+     * @param tableName The new name of the table
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+    
+    /**
+     * 
+     * @return The schema of the table 
+     */
+    public TableSchema getTableSchema() 
+    {
+        return this.tableSchema;
+    }
+    
+    /**
+     * Sets the schema of the table
+     * @param tableSchema 
+     */
+    public void setTableSchema(TableSchema tableSchema)
+    {
+        this.tableSchema = tableSchema;
+    }
+    
+    /**
+     * Reads all the rows from the database to the memory
+     * Warning: might be memory intensive, only use with small tables
+     */
+    public void populateAllRowData() throws SQLException, ReadException
+    {
+        setRowData(super.readAllRowData(this));
     }
 }

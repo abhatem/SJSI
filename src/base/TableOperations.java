@@ -16,6 +16,8 @@
  */
 package base;
 
+import base.utils.ReadException;
+import base.utils.ValuesException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -28,7 +30,7 @@ import java.util.ArrayList;
  * Handles Table operations
  * @author abo0ody
  */
-public class TableOperations {
+class TableOperations {
     private Connection conn = null;
     private DatabaseMetaData metaData = null;
     private String databaseName = null;
@@ -56,12 +58,12 @@ public class TableOperations {
     }
     
     /**
-     * Creates a table with a specified name and specified fields.
-     * @param TableName
-     * @param fields
+     * Writes a table to the database a specified name and specified fields.
+     * @param TableName The name of the Table
+     * @param fields ArrayList<string> object with every element representing a field
      * @throws java.sql.SQLException
      */
-    public void createTable(String TableName, ArrayList<String> fields) throws SQLException
+    public void writeTable(String TableName, ArrayList<String> fields) throws SQLException
     {
         String sql = "CREATE TABLE " + TableName + "(";
         for(int i = 0; i < fields.size(); i++) {
@@ -72,14 +74,20 @@ public class TableOperations {
         }
         sql += ")";
         stmt = this.conn.createStatement();
-        stmt.execute(sql);
+        stmt.execute(sql.trim());
         stmt.close();
             
     }
     
-    public void createTable(String TableName, TableSchema schema) throws SQLException
+    /**
+     * Writes a table to the database
+     * @param TableName name of the table to be created 
+     * @param schema the schema of the table to be written
+     * @throws SQLException 
+     */
+    public void writeTable(String TableName, TableSchema schema) throws SQLException
     {
-        createTable(TableName, schema.toStringList());
+        writeTable(TableName, schema.toStringList());
     }
     
     /**
@@ -154,6 +162,68 @@ public class TableOperations {
         //stmt.close();
         return rs;
     }
+    
+    
+    /**
+     * inserts a new row to the table
+     * @param tableName
+     * @param schema
+     * @param values
+     * @throws SQLException
+     * @throws ValuesException 
+     */
+    public void insertRow(Table tab, ArrayList<String> values) 
+            throws SQLException, ValuesException
+    {
+        if(values.size() != tab.tableSchema.getColumnSize()) throw new ValuesException("Values and column count do not match.");
+        this.stmt = this.conn.createStatement();
+        String sql = "INSEERT INTO " + tab.tableName + "(";
+        
+        for(int i = 0; i < tab.tableSchema.getColumnSize(); i++)
+        {
+            sql += tab.tableSchema.getColumn(i).columnName;
+            if(i != tab.tableSchema.getColumnSize()-1) sql += ",";
+        }
+        sql += ") VALUES(";
+        for(int i = 0; i < values.size(); i++)
+        {
+            sql += values.get(i);
+            if(i != values.size()-1) sql += ",";
+        }
+        sql += ");";
+        stmt.executeUpdate(sql);
+    }
+    
+    /**
+     * 
+     * @param tab The table object
+     * @param i The index of the row
+     * @return Returns an ArrayList of strings that has one element for every column
+     * @throws SQLException 
+     */
+    public ArrayList<String> getRow(Table tab, int i) throws SQLException
+    {
+        ArrayList<ArrayList<String>> rowData = tab.getRowData();
+        return rowData.get(i);
+    }
+    
+    public ArrayList<ArrayList<String>> readAllRowData(Table tab) throws SQLException, ReadException
+    {
+        ArrayList<ArrayList<String>> rowData = new ArrayList<>();
+        ArrayList<String> currentRow;
+        this.stmt = this.conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM " + tab.getTableName());
+        int i = 0;
+        if(tab.getTableSchema().getColumnSize() != rs.getMetaData().getColumnCount()) throw new ReadException("The table object and the table in the database do not match.");
+        while(rs.next()) {
+            currentRow = new ArrayList();
+            for(int j = 0; j < rs.getMetaData().getColumnCount(); j++ ) {
+                currentRow.add(rs.getString(j));
+            }
+            rowData.add(currentRow);
+        }
+        return rowData;
+    }
 
     
     
@@ -164,21 +234,22 @@ public class TableOperations {
             conn.Connect("test.db");
             TableOperations tb = new TableOperations(conn);
             System.out.println(tb.databaseName);
-            ArrayList<String> fields = new ArrayList<String>();
+            ArrayList<String> fields = new ArrayList<>();
             fields.add("id INT PRIMARY KEY");
             fields.add("sometext TEXT NOT NULL");
             fields.add("num INT AUTO INCREMENT");
             tb.deleteTable("sometable");
-            tb.createTable("sometable", fields);
+            tb.writeTable("sometable", fields);
             try (ResultSet rs = tb.getTableSchema("sometable")) {
                 while(rs.next()) {
                     System.out.println(rs.getString(4));
                 }
             }
-            
+            Table tab = new Table();
+            tab.insertRow("hello\\; hi; what");
             TableSchema schema = new TableSchema(tb.getTableSchema("sometable"));
             tb.deleteTable("sometable2");
-            tb.createTable("sometable2", schema);
+            tb.writeTable("sometable2", schema);
             System.out.println("---------------------------------------------");
             try (ResultSet rs = tb.getTableSchema("sometable2")) {
                 while(rs.next()) {
@@ -189,7 +260,7 @@ public class TableOperations {
             }
             
             System.out.println("Table exists: " + tb.TableExists("sometable2"));
-        } catch (SQLException | ClassNotFoundException e){
+        } catch (SQLException | ValuesException | ClassNotFoundException e){
             System.err.println(e.getMessage());
         }
         
