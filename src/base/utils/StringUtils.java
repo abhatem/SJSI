@@ -37,17 +37,35 @@ public class StringUtils {
     
     public static ArrayList<String> breakString(String str, String occurence) throws ValuesException
     {
-        if(str.startsWith(";")) throw new ValuesException("String begins with a semicolon.");
+        //if(str.startsWith(";")) str = "null" + str;
         ArrayList<String> vals = new ArrayList<>();
         int colonMatches = StringUtils.countMatches(str, ";");
         int indexofcolon = 0;
+        String trimmedStr = str.trim();
         for(int i = 0; i < colonMatches; i++){
-            indexofcolon = str.indexOf(';', indexofcolon+1);
-            if((str.charAt(indexofcolon-1) != '\\') || ((str.charAt(indexofcolon-1) == '\\') && (str.charAt(indexofcolon-2) == '\\'))) {
-                vals.add(str.substring(0, indexofcolon).trim());
+//            if(!trimmedStr.startsWith(";"))
+//                indexofcolon = trimmedStr.indexOf(';', indexofcolon+1);
+//            else indexofcolon = 0;
+//            
+//            if(indexofcolon > 0) {
+//                vals.add(trimmedStr.substring(0, indexofcolon).trim());
+//                trimmedStr = trimmedStr.substring(indexofcolon+1);
+//            } else if (indexofcolon <= 0) {
+//                vals.add("");
+//                trimmedStr = trimmedStr.substring(indexofcolon+1);
+//            }
+            if(!str.startsWith(";"))
+                indexofcolon = str.indexOf(';', indexofcolon+1);
+            else indexofcolon = str.indexOf(';', indexofcolon);
+            if(indexofcolon > 0) {
+                //if((str.charAt(indexofcolon-1) != '\\') || ((str.charAt(indexofcolon-1) == '\\') && (str.charAt(indexofcolon-2) == '\\'))) {
+                    vals.add(str.substring(0, indexofcolon).trim());
+                    str = str.substring(indexofcolon+1);
+                //}
+            } else if (indexofcolon <= 0) {
+                vals.add("");
                 str = str.substring(indexofcolon+1);
             }
-            
             
         }
         vals.add(str.trim());

@@ -16,11 +16,13 @@
  */
 package base;
 
+import base.utils.NoSchemaException;
 import base.utils.ReadException;
 import base.utils.ValuesException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import static base.utils.StringUtils.breakString;
+import base.utils.NoSchemaException;
 
 /**
  * Class responsible for handling tables
@@ -41,7 +43,8 @@ public class Table extends TableOperations {
         // operations will be handled by the parent class (TableOperations)
         super(liteConn);
         this.tableName = TableName;
-        this.tableSchema = new TableSchema(liteConn, this.tableName);
+        //this.tableSchema = new TableSchema(liteConn, this.tableName);
+        
     }
     
     /**
@@ -56,23 +59,26 @@ public class Table extends TableOperations {
         super(liteConn);
         this.tableName = TableName;
         this.tableSchema = ts;
-        super.writeTable(TableName, ts);
+        //super.writeTable(TableName, ts);
     }
     
-    /**
-     * Dummy constructor
-     */
-    public Table() {
-        super();
-    }
+//    /**
+//     * Dummy constructor
+//     */
+//    public Table() {
+//        super();
+//    }
     
     /**
      * Writes the table to the database.
      * @throws SQLException 
+     * @throws base.utils.NoSchemaException 
      */
-    public void writeTable() throws SQLException 
+    public void writeTable() throws SQLException, NoSchemaException 
     {
-        super.writeTable(this.tableName, this.tableSchema);
+        if(this.tableSchema != null) { 
+            super.writeTable(this.tableName, this.tableSchema);
+        } else throw new NoSchemaException("Attempt to write a table to database without specifying it's schema"); 
     }
     
     /**
@@ -91,7 +97,7 @@ public class Table extends TableOperations {
     
     /**
      * Inserts a new row to the table
-     * @param Values ArrayList<String> specifying the values to be stored example: [0] = 1, [1] = user, [2] = pass
+     * @param Values ArrayList of strings specifying the values to be stored example: [0] = 1, [1] = user, [2] = pass
      * @throws SQLException
      * @throws ValuesException 
      */
@@ -155,9 +161,51 @@ public class Table extends TableOperations {
     /**
      * Reads all the rows from the database to the memory
      * Warning: might be memory intensive, only use with small tables
+     * Note: The data will not be used with normal table functionality. If you want to use it, use getRowData.
      */
     public void populateAllRowData() throws SQLException, ReadException
     {
         setRowData(super.readAllRowData(this));
+    }
+    
+    /**
+     * Returns the data stored in one row of the table.
+     * @param rowIndex The index of the row.
+     * @return ArrayList of strings with every element being a columns value.
+     * @throws SQLException
+     * @throws ReadException 
+     */
+    public ArrayList<String> readRow(int rowIndex) throws SQLException, ReadException
+    {
+        return super.readRow(this, rowIndex);
+    }
+    
+//    /**
+//     * Reads the values of multiple columns. to read the values of only one column use #readColumnValues
+//     * @param columnNames The names of the columns
+//     * @return A double ArrayList of strings with every element in the first ArrayList being a column, and the elements of the second one being a row's value.
+//     * @throws ReadException
+//     * @throws SQLException 
+//     */
+//    public ArrayList<ArrayList<String>> readMultipleColumnsValues(ArrayList<String> columnNames) throws ReadException, SQLException
+//    {
+//        return super.readMultipleColumnsValues(this, columnNames);
+//    }
+    
+    /**
+     * Reads the values stored in a single column.
+     * @param columnName The name of the column.
+     * @return An ArrayList with every element being a row's value.
+     * @throws SQLException
+     * @throws ReadException 
+     */
+    public ArrayList<String> readColumnValues(String columnName) throws SQLException, ReadException
+    {
+        return super.readColumnValues(this, columnName);
+    }
+    
+    public void deleteTable() throws SQLException
+    {
+        super.deleteTable(this);
     }
 }

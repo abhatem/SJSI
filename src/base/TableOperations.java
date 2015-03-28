@@ -60,7 +60,7 @@ class TableOperations {
     /**
      * Writes a table to the database a specified name and specified fields.
      * @param TableName The name of the Table
-     * @param fields ArrayList<string> object with every element representing a field
+     * @param fields ArrayList of strings object with every element representing a field
      * @throws java.sql.SQLException
      */
     public void writeTable(String TableName, ArrayList<String> fields) throws SQLException
@@ -72,7 +72,7 @@ class TableOperations {
                 sql += ", ";
             }
         }
-        sql += ")";
+        sql += ");";
         stmt = this.conn.createStatement();
         stmt.execute(sql.trim());
         stmt.close();
@@ -98,9 +98,17 @@ class TableOperations {
     public void deleteTable(String name) throws SQLException
     {
         String sql = "DROP TABLE IF EXISTS " + name;
-        stmt = this.conn.createStatement();
-        stmt.execute(sql);
-        stmt.close();
+        this.stmt = this.conn.createStatement();
+        this.stmt.execute(sql);
+        this.stmt.close();
+    }
+    
+    public void deleteTable(Table tab) throws SQLException
+    {
+        String sql = "DROP TABLE IF EXISTS " + tab.getTableName();
+        this.stmt = this.conn.createStatement();
+        this.stmt.execute(sql);
+        this.stmt.close();
     }
     
     /**
@@ -166,9 +174,8 @@ class TableOperations {
     
     /**
      * inserts a new row to the table
-     * @param tableName
-     * @param schema
-     * @param values
+     * @param tab Table object to insert data into 
+     * @param values Every value must be in string format within an ArrayList of strings
      * @throws SQLException
      * @throws ValuesException 
      */
@@ -177,7 +184,7 @@ class TableOperations {
     {
         if(values.size() != tab.tableSchema.getColumnSize()) throw new ValuesException("Values and column count do not match.");
         this.stmt = this.conn.createStatement();
-        String sql = "INSEERT INTO " + tab.tableName + "(";
+        String sql = "INSERT INTO " + tab.tableName + "(";
         
         for(int i = 0; i < tab.tableSchema.getColumnSize(); i++)
         {
@@ -187,7 +194,13 @@ class TableOperations {
         sql += ") VALUES(";
         for(int i = 0; i < values.size(); i++)
         {
-            sql += values.get(i);
+            
+            if(tab.getTableSchema().getColumn(i).columnType.equals("TEXT")){
+                sql += "\""  + values.get(i) + "\"";
+            } else {
+                if(values.get(i).equals("")) values.set(i, "NULL");
+                sql += values.get(i);
+            }
             if(i != values.size()-1) sql += ",";
         }
         sql += ");";
@@ -207,6 +220,13 @@ class TableOperations {
         return rowData.get(i);
     }
     
+    /**
+     * 
+     * @param tab
+     * @return
+     * @throws SQLException
+     * @throws ReadException 
+     */
     public ArrayList<ArrayList<String>> readAllRowData(Table tab) throws SQLException, ReadException
     {
         ArrayList<ArrayList<String>> rowData = new ArrayList<>();
@@ -217,27 +237,108 @@ class TableOperations {
         if(tab.getTableSchema().getColumnSize() != rs.getMetaData().getColumnCount()) throw new ReadException("The table object and the table in the database do not match.");
         while(rs.next()) {
             currentRow = new ArrayList();
-            for(int j = 0; j < rs.getMetaData().getColumnCount(); j++ ) {
+            for(int j = 1; j < rs.getMetaData().getColumnCount()+1; j++ ) {
                 currentRow.add(rs.getString(j));
             }
             rowData.add(currentRow);
         }
+        this.stmt.close();
+        rs.close();
         return rowData;
+    }
+    
+    /**
+     * Reads a single row from the database and puts every columns value into an element of the returned ArrayList in string format.
+     * @param tab The table to read from.
+     * @param rowIndex the index of the row.
+     * @return ArrayList of strings with every element being a column's value.
+     * @throws SQLException 
+     * @throws ReadException if given table and table in the database do not match 
+     */
+    public ArrayList<String> readRow(Table tab, int rowIndex) throws SQLException, ReadException
+    {
+        this.stmt = this.conn.createStatement();
+        String sql = "SELECT * FROM " + tab.tableName + " LIMIT 1 OFFSET " + rowIndex;
+        ResultSet rs = stmt.executeQuery(sql);
+        ArrayList<String> returnData = new ArrayList<>();
+        if(tab.getTableSchema().getColumnSize() != rs.getMetaData().getColumnCount()) throw new ReadException("The table object and the table in the database do not match.");
+        rs.next(); // don't need to loop since all I'm getting is one row
+        for(int i = 1; i < rs.getMetaData().getColumnCount()+1; i++) {
+            returnData.add(rs.getString(i));
+        }
+        this.stmt.close();
+        rs.close();
+        return returnData;
+    }
+    
+    /**
+     * Gets the row values of multiple columns
+     * @param tab the table to read from
+     * @param columnNames an ArrayList of strings containing the column names
+     * @return an 
+     * @throws SQLException
+     * @throws ReadException 
+     */
+//    public ArrayList<ArrayList<String>> readMultipleColumnsValues(Table tab, ArrayList<String> columnNames) throws SQLException, ReadException
+//    {
+//        
+//        ArrayList<ArrayList<String>> returnData = new ArrayList<>();
+//        ArrayList<String> currentRowData = new ArrayList<>();
+//        String columnNamesString = new String(); // column names in one string
+//        for(int i = 0; i < columnNames.size(); i++ ) { 
+//            columnNamesString += columnNames.get(i);
+//            if(i != columnNames.size() -1){
+//                columnNamesString += ", ";
+//            }
+//        }
+//        this.stmt = this.conn.createStatement();
+//        ResultSet rs = this.stmt.executeQuery("SELECT " + columnNamesString + " FROM " + tab.tableName);
+//        if(columnNames.size() != rs.getMetaData().getColumnCount()) throw new ReadException("The table object and the table in the database do not match.");
+//        while(rs.next()) {
+//            for(int i = 1; i < rs.getMetaData().getColumnCount()+1; i++ ) {
+//                currentRowData.add(rs.getString(i));
+//            }
+//            returnData.add(currentRowData);
+//        }
+//        this.stmt.close();
+//        rs.close();
+//        return returnData;
+//    }
+    
+    /**
+     * Reads all the row values of a single column.
+     * @param tab The table to be read from
+     * @param columnName The name of the column
+     * @return ArrayList of strings with every element being a row value from the specified column
+     * @throws SQLException
+     * @throws ReadException 
+     */
+    public ArrayList<String> readColumnValues(Table tab, String columnName) throws SQLException, ReadException
+    {
+        ArrayList<String> returnData = new ArrayList<>();
+        this.stmt = this.conn.createStatement();
+        ResultSet rs = this.stmt.executeQuery("SELECT " + columnName + " FROM " + tab.tableName);
+        while(rs.next()) {
+            returnData.add(rs.getString(1));
+        }
+        this.stmt.close();
+        rs.close();
+        return returnData;
     }
 
     
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException, ReadException, ValuesException, ClassNotFoundException {
         LiteConnection conn = new LiteConnection();
         
-        try {
+        
             conn.Connect("test.db");
             TableOperations tb = new TableOperations(conn);
             System.out.println(tb.databaseName);
             ArrayList<String> fields = new ArrayList<>();
-            fields.add("id INT PRIMARY KEY");
+            fields.add("id INTEGER PRIMARY KEY AUTOINCREMENT");
             fields.add("sometext TEXT NOT NULL");
-            fields.add("num INT AUTO INCREMENT");
+            fields.add("num INTEGER");
             tb.deleteTable("sometable");
             tb.writeTable("sometable", fields);
             try (ResultSet rs = tb.getTableSchema("sometable")) {
@@ -245,24 +346,27 @@ class TableOperations {
                     System.out.println(rs.getString(4));
                 }
             }
-            Table tab = new Table();
-            tab.insertRow("hello\\; hi; what");
+            Table tab = new Table(conn, "sometable2");
             TableSchema schema = new TableSchema(tb.getTableSchema("sometable"));
-            tb.deleteTable("sometable2");
-            tb.writeTable("sometable2", schema);
+            tab.writeTable("sometable2", schema);
             System.out.println("---------------------------------------------");
-            try (ResultSet rs = tb.getTableSchema("sometable2")) {
+            try (ResultSet rs = tab.getTableSchema("sometable2")) {
                 while(rs.next()) {
                     System.out.println(rs.getString(2));
                 }
             } catch (Exception e) {
                 System.err.println(e.getMessage());
             }
+            tab.insertRow(";what the fuck; ");
+            tab.insertRow(";;");
             
+            tab.insertRow("10;text goes here.!2@;29382341141242189273859273987");
+            System.out.println(tab.readRow(0));
+            System.out.println(tab.readRow(1));
+            System.out.println(tab.readRow(2));
+            
+            tab.deleteTable();
             System.out.println("Table exists: " + tb.TableExists("sometable2"));
-        } catch (SQLException | ValuesException | ClassNotFoundException e){
-            System.err.println(e.getMessage());
-        }
         
     }
     
